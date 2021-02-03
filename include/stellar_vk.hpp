@@ -546,21 +546,26 @@ namespace stellar {
 	class UniqueObject {
 	public:
 		template <class T>
-		class Creator {
+		class Builder {
 		public:
 			std::unique_ptr<T> object;
 
 		public:
-			virtual Creator& add_flags( const Flags& flags_ ) = 0;
-			virtual T&& create() = 0;
+			virtual Builder& add_flags( const Flags& flags_ ) = 0;
+			virtual T&& build() = 0;
 		};
 
+	protected:
 		UObject object;
 		Flags flags;
 		ExtensionMap extensionMap;
 
 	public:
-		constexpr VkObject& get() const {
+		constexpr UObject& get_unique_object() const {
+			return object;
+		}
+
+		constexpr VkObject& get_object() const {
 			return object.get();
 		}
 
@@ -572,22 +577,40 @@ namespace stellar {
 	using UOInstance = UniqueObject<vk::UniqueInstance, vk::Instance, vk::InstanceCreateFlags>;
 	class Instance : public UOInstance {
 	public:
-		class InstanceCreator : public Creator<Instance> {
+		class InstanceBuilder : public Builder<Instance> {
 		public:
-			InstanceCreator();
-			InstanceCreator& set_application_name( const std::string& applicationName_ );
-			InstanceCreator& set_application_version( const uint32_t& major_, const uint32_t& minor_, const uint32_t& patch_ );
-			InstanceCreator& set_engine_name( const std::string& engineName_ );
-			InstanceCreator& set_engine_version( const uint32_t& major_, const uint32_t& minor_, const uint32_t& patch_ );
-			InstanceCreator& set_api_version( const uint32_t& major_, const uint32_t minor_ );
-			InstanceCreator& include_layer( const std::string& layerName_ );
-			InstanceCreator& include_layers( const vk::ArrayProxy<const std::string> layerNames_ );
-			InstanceCreator& include_all_available_layers();
-			InstanceCreator& include_extension( const std::string& extensionName_ );
-			InstanceCreator& include_extensions( const vk::ArrayProxy<const std::string> extensionNames_ );
-			InstanceCreator& include_all_available_extensions();
-			InstanceCreator& add_flags( const vk::InstanceCreateFlags& flags_ ) override;
-			Instance&& create() override;
+			InstanceBuilder();
+
+			template <typename E>
+			InstanceBuilder& add_next_extension( const E& extension_ ) {
+				object->extensionMap.add( extension_ );
+			}
+
+			InstanceBuilder& set_application_name( const std::string& applicationName_ );
+
+			InstanceBuilder& set_application_version( const uint32_t& major_, const uint32_t& minor_, const uint32_t& patch_ );
+
+			InstanceBuilder& set_engine_name( const std::string& engineName_ );
+
+			InstanceBuilder& set_engine_version( const uint32_t& major_, const uint32_t& minor_, const uint32_t& patch_ );
+
+			InstanceBuilder& set_api_version( const uint32_t& major_, const uint32_t minor_ );
+
+			InstanceBuilder& include_layer( const std::string& layerName_ );
+
+			InstanceBuilder& include_layers( const vk::ArrayProxy<const std::string> layerNames_ );
+
+			InstanceBuilder& include_all_available_layers();
+
+			InstanceBuilder& include_extension( const std::string& extensionName_ );
+
+			InstanceBuilder& include_extensions( const vk::ArrayProxy<const std::string> extensionNames_ );
+
+			InstanceBuilder& include_all_available_extensions();
+
+			InstanceBuilder& add_flags( const vk::InstanceCreateFlags& flags_ ) override;
+
+			Instance&& build() override;
 		};
 
 	public:
@@ -595,6 +618,7 @@ namespace stellar {
 		static const std::vector<vk::LayerProperties> availableLayers;
 		static const std::vector<vk::ExtensionProperties> availableExtensions;
 
+	private:
 		std::string applicationName;
 		uint32_t applicationVersion;
 		std::string engineName;
@@ -604,8 +628,19 @@ namespace stellar {
 		std::vector<std::string> enabledExtensionNames;
 
 	public:
+		const std::string& get_application_name() const;
+		const uint32_t& get_application_version() const;
+		const std::string& get_engine_name() const;
+		const uint32_t& get_engine_version() const;
+		const uint32_t& get_api_version() const;
+		const std::vector<std::string>& get_enabled_layer_names() const;
+		const std::vector<std::string>& get_enabled_extension_names() const;
+
 		const bool layer_exists( const std::string& layerName_ ) const;
 		const bool extension_exists( const std::string& extensionName_ ) const;
+
+	private:
+		Instance() = default;
 	};
 
 	//class PhysicalDevice {

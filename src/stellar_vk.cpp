@@ -1,4 +1,4 @@
-#include "../include/stellar_vk.hpp"
+#include "stellar_vk.hpp"
 
 namespace stellar {
 	void* ExtensionMap::get_chain() const {
@@ -9,38 +9,38 @@ namespace stellar {
 	const std::vector<vk::LayerProperties> Instance::availableLayers = vk::enumerateInstanceLayerProperties();
 	const std::vector<vk::ExtensionProperties> Instance::availableExtensions = vk::enumerateInstanceExtensionProperties();
 
-	Instance::InstanceCreator::InstanceCreator() {
-		object = std::make_unique<Instance>();
+	Instance::InstanceBuilder::InstanceBuilder() {
+		object = std::unique_ptr<Instance>(new Instance());
 	}
 
-	Instance::InstanceCreator& Instance::InstanceCreator::add_flags( const vk::InstanceCreateFlags& flags_ ) {
+	Instance::InstanceBuilder& Instance::InstanceBuilder::add_flags( const vk::InstanceCreateFlags& flags_ ) {
 		object->flags |= flags_;
 		return *this;
 	}
 
-	Instance::InstanceCreator& Instance::InstanceCreator::set_application_name( const std::string& applicationName_ ) {
+	Instance::InstanceBuilder& Instance::InstanceBuilder::set_application_name( const std::string& applicationName_ ) {
 		object->applicationName = applicationName_;
 		return *this;
 
 	}
 
-	Instance::InstanceCreator& Instance::InstanceCreator::set_application_version( const uint32_t& major_, const uint32_t& minor_, const uint32_t& patch_ ) {
+	Instance::InstanceBuilder& Instance::InstanceBuilder::set_application_version( const uint32_t& major_, const uint32_t& minor_, const uint32_t& patch_ ) {
 		object->applicationVersion = VK_MAKE_VERSION( major_, minor_, patch_ );
 		return *this;
 	}
 
-	Instance::InstanceCreator& Instance::InstanceCreator::set_engine_name( const std::string& engineName_ ) {
+	Instance::InstanceBuilder& Instance::InstanceBuilder::set_engine_name( const std::string& engineName_ ) {
 		object->engineName = engineName_;
 		return *this;
 	}
 
-	Instance::InstanceCreator& Instance::InstanceCreator::set_engine_version( const uint32_t& major_, const uint32_t& minor_, const uint32_t& patch_ ) {
+	Instance::InstanceBuilder& Instance::InstanceBuilder::set_engine_version( const uint32_t& major_, const uint32_t& minor_, const uint32_t& patch_ ) {
 		object->engineVersion = VK_MAKE_VERSION( major_, minor_, patch_ );
 		return *this;
 
 	}
 
-	Instance::InstanceCreator& Instance::InstanceCreator::set_api_version( const uint32_t& major_, const uint32_t minor_ ) {
+	Instance::InstanceBuilder& Instance::InstanceBuilder::set_api_version( const uint32_t& major_, const uint32_t minor_ ) {
 		auto version = VK_MAKE_VERSION( major_, minor_, 0 );
 		if( version <= VK_API_VERSION_1_0 && version != 0 ) {
 			throw vk::LogicError( "The API version must be greater than or equal to VK_API_VERSION_1_0." );
@@ -52,7 +52,7 @@ namespace stellar {
 
 	}
 
-	Instance::InstanceCreator& Instance::InstanceCreator::include_layer( const std::string& layerName_ ) {
+	Instance::InstanceBuilder& Instance::InstanceBuilder::include_layer( const std::string& layerName_ ) {
 		auto haveLayer = std::any_of( availableLayers.begin(),
 									  availableLayers.end(),
 									  [layerName_]( vk::LayerProperties l ) { return layerName_ == l.layerName; } );
@@ -64,7 +64,7 @@ namespace stellar {
 		return *this;
 	}
 
-	Instance::InstanceCreator& Instance::InstanceCreator::include_layers( const vk::ArrayProxy<const std::string> layerNames_ ) {
+	Instance::InstanceBuilder& Instance::InstanceBuilder::include_layers( const vk::ArrayProxy<const std::string> layerNames_ ) {
 		for( const auto& n : layerNames_ ) {
 			include_layer( n );
 		}
@@ -72,14 +72,14 @@ namespace stellar {
 
 	}
 
-	Instance::InstanceCreator& Instance::InstanceCreator::include_all_available_layers() {
+	Instance::InstanceBuilder& Instance::InstanceBuilder::include_all_available_layers() {
 		for( const auto& l : availableLayers ) {
 			object->enabledLayerNames.push_back( l.layerName );
 		}
 		return *this;
 	}
 
-	Instance::InstanceCreator& Instance::InstanceCreator::include_extension( const std::string& extensionName_ ) {
+	Instance::InstanceBuilder& Instance::InstanceBuilder::include_extension( const std::string& extensionName_ ) {
 		auto haveExtension = std::any_of( availableExtensions.begin(),
 										  availableExtensions.end(),
 										  [extensionName_]( vk::ExtensionProperties e ) { return extensionName_ == e.extensionName; } );
@@ -91,21 +91,21 @@ namespace stellar {
 		return *this;
 	}
 
-	Instance::InstanceCreator& Instance::InstanceCreator::include_extensions( const vk::ArrayProxy<const std::string> extensionNames_ ) {
+	Instance::InstanceBuilder& Instance::InstanceBuilder::include_extensions( const vk::ArrayProxy<const std::string> extensionNames_ ) {
 		for( const auto& n : extensionNames_ ) {
 			include_extension( n );
 		}
 		return *this;
 	}
 
-	Instance::InstanceCreator& Instance::InstanceCreator::include_all_available_extensions() {
+	Instance::InstanceBuilder& Instance::InstanceBuilder::include_all_available_extensions() {
 		for( const auto& e : availableExtensions ) {
 			object->enabledExtensionNames.push_back( e.extensionName );
 		}
 		return *this;
 	}
 
-	Instance&& Instance::InstanceCreator::create() {
+	Instance&& Instance::InstanceBuilder::build() {
 		std::vector<const char*> layerNames, extensionNames;
 		for( const auto& n : object->enabledLayerNames ) {
 			layerNames.push_back( n.data() );
@@ -137,6 +137,34 @@ namespace stellar {
 
 	const bool Instance::layer_exists( const std::string& layerName_ ) const {
 		return std::any_of( availableLayers.begin(), availableLayers.end(), [&]( vk::LayerProperties p ) { return layerName_ == p.layerName; } );
+	}
+
+	const std::string& Instance::get_application_name() const {
+		return applicationName;
+	}
+
+	const uint32_t& Instance::get_application_version() const {
+		return applicationVersion;
+	}
+
+	const std::string& Instance::get_engine_name() const {
+		return engineName;
+	}
+
+	const uint32_t& Instance::get_engine_version() const {
+		return engineVersion;
+	}
+
+	const uint32_t& Instance::get_api_version() const {
+		return apiVersion;
+	}
+
+	const std::vector<std::string>& Instance::get_enabled_layer_names() const {
+		return enabledLayerNames;
+	}
+
+	const std::vector<std::string>& Instance::get_enabled_extension_names() const {
+		return enabledExtensionNames;
 	}
 
 	const bool Instance::extension_exists( const std::string& extensionName_ ) const  {
