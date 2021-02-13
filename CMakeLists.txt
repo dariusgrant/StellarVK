@@ -13,7 +13,7 @@ if (Vulkan_FOUND)
 endif (Vulkan_FOUND)
 
 include_directories("include")
-add_library (StellarVk "src/stellar_vk.cpp" "include/stellar_vk.hpp")
+add_library (StellarVk "src/stellar_vk.cpp" "include/stellar_vk.hpp" "include/ExtensionMap.hpp" "src/ExtensionMap.cpp" "include/UniqueObject.hpp" "include/Instance.hpp" "src/Instance.cpp" "include/PhysicalDevice.hpp" "src/PhysicalDevice.cpp" "include/Surface.hpp" "src/Surface.cpp" "include/WindowSystemType.hpp")
 add_executable(StellarVkExe "examples/test.cpp")
 target_link_libraries(StellarVkExe StellarVk)
 

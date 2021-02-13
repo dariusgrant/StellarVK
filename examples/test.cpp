@@ -1,15 +1,12 @@
 #include "stellar_vk.hpp"
+#include <iostream>
 
 int main() {
-	vk::ValidationCheckEXT v = vk::ValidationCheckEXT::eAll;
 	stellar::Instance i1 = stellar::Instance::InstanceBuilder()
+		.add_flags( vk::InstanceCreateFlagBits() )
 		.include_layers( { "VK_LAYER_LUNARG_api_dump", "VK_LAYER_KHRONOS_validation" } )
-		.include_extensions( { VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME, VK_EXT_DEBUG_UTILS_EXTENSION_NAME } )
+		.include_extensions( { VK_EXT_DEBUG_UTILS_EXTENSION_NAME } )
 		.set_api_version( 1, 2 )
-		.add_next_extension( vk::ValidationFeaturesEXT(),
-							 vk::ValidationFlagsEXT()
-							 .setDisabledValidationCheckCount( 1 )
-							 .setPDisabledValidationChecks( &v ) )
 		.build();
 
 	auto physicalDevices = stellar::PhysicalDevice::get_physical_devices( i1 );

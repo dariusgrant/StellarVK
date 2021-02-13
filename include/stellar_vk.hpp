@@ -1,10 +1,8 @@
 #pragma once
-#define VK_USE_PLATFORM_WIN32_KHR
-#include <vulkan/vulkan.hpp>
-#include <fstream>
-#include <map>
-#include <any>
-#include <typeindex>
+#define VK_USE_PLATFORM_ANDROID_KHR
+#include "Instance.hpp"
+#include "PhysicalDevice.hpp"
+#include "Surface.hpp"
 
 namespace stellar {
 	namespace utility {
@@ -498,239 +496,239 @@ namespace stellar {
 		}
 	}
 
-	class ExtensionMap {
-	private:
-		std::map<std::size_t, std::any> map;
-		void* pStart = nullptr;
-		void** pEnd = nullptr;
+	//class ExtensionMap {
+	//private:
+	//	std::map<std::size_t, std::any> map;
+	//	void* pStart = nullptr;
+	//	void** pEnd = nullptr;
 
-	public:
-		template <typename Extension>
-		ExtensionMap& add( const Extension& extension_ ) {
-			auto typeIndex = std::type_index( typeid(Extension) );
-			auto hash = typeIndex.hash_code();
-			map[hash] = extension_;
-			Extension& obj = std::any_cast<Extension&>(map[hash]);
+	//public:
+	//	template <typename Extension>
+	//	ExtensionMap& add( const Extension& extension_ ) {
+	//		auto typeIndex = std::type_index( typeid(Extension) );
+	//		auto hash = typeIndex.hash_code();
+	//		map[hash] = extension_;
+	//		Extension& obj = std::any_cast<Extension&>(map[hash]);
 
-			if( pStart == nullptr ) {
-				pStart = &obj;
-			}
-			else {
-				*pEnd = &obj;
-			}
+	//		if( pStart == nullptr ) {
+	//			pStart = &obj;
+	//		}
+	//		else {
+	//			*pEnd = &obj;
+	//		}
 
-			pEnd = const_cast<void**>(&obj.pNext);
+	//		pEnd = const_cast<void**>(&obj.pNext);
 
-			return *this;
-		}
+	//		return *this;
+	//	}
 
-		template <typename First, typename... Rest>
-		ExtensionMap& add( const First& first_, const Rest&... rest_ ) {
-			add( first_ );
-			add( rest_... );
-			return *this;
-		}
+	//	template <typename First, typename... Rest>
+	//	ExtensionMap& add( const First& first_, const Rest&... rest_ ) {
+	//		add( first_ );
+	//		add( rest_... );
+	//		return *this;
+	//	}
 
-		template <class T>
-		const T* get() const {
-			auto typeIndex = std::type_index( typeid(T) );
-			const auto& res = map.find( typeIndex.hash_code() );
-			return res != map.end() ? std::any_cast<T*>(&res->second) : nullptr;
-		}
+	//	template <class T>
+	//	const T* get() const {
+	//		auto typeIndex = std::type_index( typeid(T) );
+	//		const auto& res = find<T>();
+	//		return res != map.end() ? std::any_cast<T*>(&res->second) : nullptr;
+	//	}
 
-		void* get_chain() const;
-
-
-	private:
-		template <class T>
-		std::map<std::size_t, std::any>::iterator find() {
-			return map.find( typeid(T).hash_code() );
-		}
-	};
-
-	template<class UObject, class VkObject, typename Flags>
-	class UniqueObject {
-	public:
-		template <class T>
-		class Builder {
-		public:
-			std::unique_ptr<T> object;
-
-		public:
-			virtual Builder& add_flags( const Flags& flags_ ) = 0;
-			virtual T&& build() = 0;
-		};
-
-	protected:
-		UObject object;
-		Flags flags;
-		ExtensionMap extensionMap;
-
-	public:
-		const UObject& get_unique_object() const {
-			return object;
-		}
-
-		const VkObject& get_object() const {
-			return object.get();
-		}
-
-		void destroy() {
-			object.reset();
-		}
-	};
-
-	using UOInstance = UniqueObject<vk::UniqueInstance, vk::Instance, vk::InstanceCreateFlags>;
-	class Instance : public UOInstance {
-	public:
-		class InstanceBuilder : public Builder<Instance> {
-		public:
-			InstanceBuilder();
-
-			template <typename E>
-			InstanceBuilder& add_next_extension( const E& extension_ ) {
-				object->extensionMap.add( extension_ );
-				return *this;
-			}
-
-			template <typename... E>
-			InstanceBuilder& add_next_extension( const E&... extension_ ) {
-				object->extensionMap.add( extension_... );
-				return *this;
-			}
-
-			InstanceBuilder& set_application_name( const std::string& applicationName_ );
-
-			InstanceBuilder& set_application_version( const uint32_t major_, const uint32_t minor_, const uint32_t patch_ );
-
-			InstanceBuilder& set_engine_name( const std::string& engineName_ );
-
-			InstanceBuilder& set_engine_version( const uint32_t major_, const uint32_t minor_, const uint32_t patch_ );
-
-			InstanceBuilder& set_api_version( const uint32_t major_, const uint32_t minor_ );
-
-			InstanceBuilder& include_layer( const std::string& layerName_ );
-
-			InstanceBuilder& include_layers( const vk::ArrayProxy<const std::string> layerNames_ );
-
-			InstanceBuilder& include_all_available_layers();
-
-			InstanceBuilder& include_extension( const std::string& extensionName_ );
-
-			InstanceBuilder& include_extensions( const vk::ArrayProxy<const std::string> extensionNames_ );
-
-			InstanceBuilder& include_all_available_extensions();
-
-			InstanceBuilder& add_flags( const vk::InstanceCreateFlags& flags_ ) override;
-
-			Instance&& build() override;
-		};
-
-	public:
-		static const uint32_t Version;
-		static const std::vector<vk::LayerProperties> AvailableLayers;
-		static const std::vector<vk::ExtensionProperties> AvailableExtensions;
-
-	private:
-		std::string applicationName;
-		uint32_t applicationVersion;
-		std::string engineName;
-		uint32_t engineVersion;
-		uint32_t apiVersion;
-		std::vector<std::string> enabledLayerNames;
-		std::vector<std::string> enabledExtensionNames;
-
-	public:
-		const std::string& get_application_name() const;
-
-		const uint32_t& get_application_version() const;
-
-		const std::string& get_engine_name() const;
-
-		const uint32_t& get_engine_version() const;
-
-		const uint32_t& get_api_version() const;
-
-		const std::vector<std::string>& get_enabled_layer_names() const;
-
-		const std::vector<std::string>& get_enabled_extension_names() const;
-
-		const bool layer_exists( const std::string& layerName_ ) const;
-
-		const bool extension_exists( const std::string& extensionName_ ) const;
-
-	private:
-		Instance() = default;
-	};
-
-	class PhysicalDevice {
-	public:
-		const vk::PhysicalDevice& physicalDevice;
-		vk::PhysicalDeviceFeatures2 features;
-		vk::PhysicalDeviceProperties2 properties;
-		vk::PhysicalDeviceMemoryProperties2 memoryProperties;
-		std::vector<vk::QueueFamilyProperties2> queueFamilyProperties;
-
-	private:
-		static std::vector<vk::PhysicalDevice> PhysicalDevices;
-		ExtensionMap featureExtensions;
-		ExtensionMap propertyExtensions;
-		ExtensionMap memoryPropertyExtensions;
-		std::vector<ExtensionMap> queueFamilyPropertyExtensions;
+	//	void* get_chain() const;
 
 
-	public:
-		static std::vector<stellar::PhysicalDevice> get_physical_devices( const stellar::Instance& instance_ );
+	//private:
+	//	template <class T>
+	//	std::map<std::size_t, std::any>::iterator find() {
+	//		return map.find( typeid(T).hash_code() );
+	//	}
+	//};
 
-		template <typename... Extensions>
-		PhysicalDevice& query_features() {
-			featureExtensions.add( Extensions()... );
-			features.pNext = featureExtensions.get_chain();
-			physicalDevice.getFeatures2( &features );
-			return *this;
-		}
+	//template<class UObject, class VkObject, typename Flags>
+	//class UniqueObject {
+	//public:
+	//	template <class T>
+	//	class Builder {
+	//	public:
+	//		std::unique_ptr<T> object;
 
-		template <typename... Extensions>
-		PhysicalDevice& query_properties() {
-			propertyExtensions.add( Extensions()... );
-			properties.pNext = propertyExtensions.get_chain();
-			physicalDevice.getProperties2( &properties );
-			return *this;
-		}
+	//	public:
+	//		virtual Builder& add_flags( const Flags& flags_ ) = 0;
+	//		virtual T&& build() = 0;
+	//	};
 
-		template <typename... Extensions>
-		PhysicalDevice& query_memory_properties() {
-			memoryPropertyExtensions.add( Extensions()... );
-			memoryProperties.pNext = memoryPropertyExtensions.get_chain();
-			physicalDevice.getMemoryProperties2( &memoryProperties );
-			return *this;
-		}
+	//protected:
+	//	UObject object;
+	//	Flags flags;
+	//	ExtensionMap extensionMap;
 
-		template <typename... Extensions>
-		PhysicalDevice& query_queue_family_properties( const uint32_t queueFamilyIndex_ ) {
-			queueFamilyPropertyExtensions[queueFamilyIndex_].add( Extensions()... );
-			queueFamilyProperties[queueFamilyIndex_].pNext =  queueFamilyPropertyExtensions[queueFamilyIndex_].get_chain();
-			physicalDevice.getQueueFamilyProperties2( &queueFamilyProperties );
-			return *this;
-		}
+	//public:
+	//	const UObject& get_unique_object() const {
+	//		return object;
+	//	}
 
-		template <typename... Extensions>
-		PhysicalDevice& query_queue_family_properties( const vk::ArrayProxy<uint32_t>& queueFamilyIndices_ ) {
-			for( auto& i : queueFamilyIndices_ ) {
-				query_queue_family_properties<Extensions...>( i );
-			}
-			return *this;
-		}
+	//	const VkObject& get_object() const {
+	//		return object.get();
+	//	}
 
-		const vk::PhysicalDevice& get() const;
+	//	void destroy() {
+	//		object.reset();
+	//	}
+	//};
 
-		const int get_memory_type_index( const vk::MemoryRequirements& requirements_, const vk::MemoryPropertyFlags& flags_ ) const;
+	//using UOInstance = UniqueObject<vk::UniqueInstance, vk::Instance, vk::InstanceCreateFlags>;
+	//class Instance : public UOInstance {
+	//public:
+	//	class InstanceBuilder : public Builder<Instance> {
+	//	public:
+	//		InstanceBuilder();
 
-		const std::vector<uint32_t> get_queue_family_indices_of( const vk::QueueFlags& flags_ ) const;
+	//		template <typename E>
+	//		InstanceBuilder& add_next_extension( const E& extension_ ) {
+	//			object->extensionMap.add( extension_ );
+	//			return *this;
+	//		}
 
-	private:
-		PhysicalDevice( const vk::PhysicalDevice& physicalDevice_ );
-	};
+	//		template <typename... E>
+	//		InstanceBuilder& add_next_extension( const E&... extension_ ) {
+	//			object->extensionMap.add( extension_... );
+	//			return *this;
+	//		}
+
+	//		InstanceBuilder& set_application_name( const std::string& applicationName_ );
+
+	//		InstanceBuilder& set_application_version( const uint32_t major_, const uint32_t minor_, const uint32_t patch_ );
+
+	//		InstanceBuilder& set_engine_name( const std::string& engineName_ );
+
+	//		InstanceBuilder& set_engine_version( const uint32_t major_, const uint32_t minor_, const uint32_t patch_ );
+
+	//		InstanceBuilder& set_api_version( const uint32_t major_, const uint32_t minor_ );
+
+	//		InstanceBuilder& include_layer( const std::string& layerName_ );
+
+	//		InstanceBuilder& include_layers( const vk::ArrayProxy<const std::string> layerNames_ );
+
+	//		InstanceBuilder& include_all_available_layers();
+
+	//		InstanceBuilder& include_extension( const std::string& extensionName_ );
+
+	//		InstanceBuilder& include_extensions( const vk::ArrayProxy<const std::string> extensionNames_ );
+
+	//		InstanceBuilder& include_all_available_extensions();
+
+	//		InstanceBuilder& add_flags( const vk::InstanceCreateFlags& flags_ ) override;
+
+	//		Instance&& build() override;
+	//	};
+
+	//public:
+	//	static const uint32_t Version;
+	//	static const std::vector<vk::LayerProperties> AvailableLayers;
+	//	static const std::vector<vk::ExtensionProperties> AvailableExtensions;
+
+	//private:
+	//	std::string applicationName;
+	//	uint32_t applicationVersion;
+	//	std::string engineName;
+	//	uint32_t engineVersion;
+	//	uint32_t apiVersion;
+	//	std::vector<std::string> enabledLayerNames;
+	//	std::vector<std::string> enabledExtensionNames;
+
+	//public:
+	//	const std::string& get_application_name() const;
+
+	//	const uint32_t& get_application_version() const;
+
+	//	const std::string& get_engine_name() const;
+
+	//	const uint32_t& get_engine_version() const;
+
+	//	const uint32_t& get_api_version() const;
+
+	//	const std::vector<std::string>& get_enabled_layer_names() const;
+
+	//	const std::vector<std::string>& get_enabled_extension_names() const;
+
+	//	const bool layer_exists( const std::string& layerName_ ) const;
+
+	//	const bool extension_exists( const std::string& extensionName_ ) const;
+
+	//private:
+	//	Instance() = default;
+	//};
+
+	//class PhysicalDevice {
+	//public:
+	//	const vk::PhysicalDevice& physicalDevice;
+	//	vk::PhysicalDeviceFeatures2 features;
+	//	vk::PhysicalDeviceProperties2 properties;
+	//	vk::PhysicalDeviceMemoryProperties2 memoryProperties;
+	//	std::vector<vk::QueueFamilyProperties2> queueFamilyProperties;
+
+	//private:
+	//	static std::vector<vk::PhysicalDevice> PhysicalDevices;
+	//	ExtensionMap featureExtensions;
+	//	ExtensionMap propertyExtensions;
+	//	ExtensionMap memoryPropertyExtensions;
+	//	std::vector<ExtensionMap> queueFamilyPropertyExtensions;
+
+
+	//public:
+	//	static std::vector<stellar::PhysicalDevice> get_physical_devices( const stellar::Instance& instance_ );
+
+	//	template <typename... Extensions>
+	//	PhysicalDevice& query_features() {
+	//		featureExtensions.add( Extensions()... );
+	//		features.pNext = featureExtensions.get_chain();
+	//		physicalDevice.getFeatures2( &features );
+	//		return *this;
+	//	}
+
+	//	template <typename... Extensions>
+	//	PhysicalDevice& query_properties() {
+	//		propertyExtensions.add( Extensions()... );
+	//		properties.pNext = propertyExtensions.get_chain();
+	//		physicalDevice.getProperties2( &properties );
+	//		return *this;
+	//	}
+
+	//	template <typename... Extensions>
+	//	PhysicalDevice& query_memory_properties() {
+	//		memoryPropertyExtensions.add( Extensions()... );
+	//		memoryProperties.pNext = memoryPropertyExtensions.get_chain();
+	//		physicalDevice.getMemoryProperties2( &memoryProperties );
+	//		return *this;
+	//	}
+
+	//	template <typename... Extensions>
+	//	PhysicalDevice& query_queue_family_properties( const uint32_t queueFamilyIndex_ ) {
+	//		queueFamilyPropertyExtensions[queueFamilyIndex_].add( Extensions()... );
+	//		queueFamilyProperties[queueFamilyIndex_].pNext =  queueFamilyPropertyExtensions[queueFamilyIndex_].get_chain();
+	//		physicalDevice.getQueueFamilyProperties2( &queueFamilyProperties );
+	//		return *this;
+	//	}
+
+	//	template <typename... Extensions>
+	//	PhysicalDevice& query_queue_family_properties( const vk::ArrayProxy<uint32_t>& queueFamilyIndices_ ) {
+	//		for( auto& i : queueFamilyIndices_ ) {
+	//			query_queue_family_properties<Extensions...>( i );
+	//		}
+	//		return *this;
+	//	}
+
+	//	const vk::PhysicalDevice& get() const;
+
+	//	const int get_memory_type_index( const vk::MemoryRequirements& requirements_, const vk::MemoryPropertyFlags& flags_ ) const;
+
+	//	const std::vector<uint32_t> get_queue_family_indices_of( const vk::QueueFlags& flags_ ) const;
+
+	//private:
+	//	PhysicalDevice( const vk::PhysicalDevice& physicalDevice_ );
+	//};
 
 	//using UODevice = UniqueObject<vk::UniqueDevice, vk::Device, vk::DeviceCreateFlags>;
 	//class Device : UODevice {
