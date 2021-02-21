@@ -1,6 +1,6 @@
 #pragma once
+
 #include <memory>
-#include <vulkan/vulkan.hpp>
 #include "ExtensionMap.hpp"
 
 namespace stellar {
@@ -13,7 +13,7 @@ namespace stellar {
 	/// <typeparam name="VkFlags">The flags associated with the object's creation.</typeparam>
 	template<class VkUniqueObject, class VkObject, typename VkFlags>
 	class UniqueObject {
-	public:
+	protected:
 		/// <summary>
 		/// The builder associated with each UniqueObject to ensure the object
 		/// is being built correctly.
@@ -22,7 +22,7 @@ namespace stellar {
 		/// <typeparam name="DerivedBuilder">The builder's type derived from this class that's building the object.</typeparam>
 		template <class DerivedBuilder, class DerivedUniqueObject>
 		class Builder {
-		public:
+		protected:
 			std::unique_ptr<DerivedUniqueObject> derivedUniqueObject;
 
 		public:
@@ -56,6 +56,16 @@ namespace stellar {
 			/// </summary>
 			/// <returns>The objected derived from UniqueObject.</returns>
 			virtual DerivedUniqueObject&& build() = 0;
+
+		protected:
+			template <typename CreateInfo>
+			CreateInfo init_create_info() {
+				CreateInfo ci;
+				ci.setPNext( derivedUniqueObject->extensionMap.get_chain() );
+				ci.setFlags( derivedUniqueObject->flags );
+
+				return ci;
+			}
 		};
 
 	protected:
@@ -104,5 +114,8 @@ namespace stellar {
 		void destroy() {
 			uniqueObject.reset();
 		}
+
+	protected:
+		UniqueObject() = default;
 	};
 }

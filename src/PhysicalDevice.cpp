@@ -3,7 +3,7 @@
 namespace stellar {
 	std::vector<vk::PhysicalDevice> PhysicalDevice::PhysicalDevices;
 
-	std::vector<PhysicalDevice> PhysicalDevice::get_physical_devices( const Instance& instance_ ) {
+	std::vector<PhysicalDevice> PhysicalDevice::get_physical_devices( const stellar::Instance& instance_ ) {
 		PhysicalDevices = instance_.get_unique_object()->enumeratePhysicalDevices();
 
 		std::vector<stellar::PhysicalDevice> result;

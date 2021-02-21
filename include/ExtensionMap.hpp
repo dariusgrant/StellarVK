@@ -1,4 +1,7 @@
 #pragma once
+#ifndef EXTENSION_MAP_HPP
+#define EXTENSION_MAP_HPP
+
 #include <map>
 #include <any>
 #include <typeindex>
@@ -92,3 +95,5 @@ namespace stellar {
 	};
 
 }
+
+#endif

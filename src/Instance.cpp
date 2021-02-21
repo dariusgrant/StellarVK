@@ -107,20 +107,19 @@ namespace stellar {
 		}
 
 		vk::ApplicationInfo appInfo;
-		appInfo.setPApplicationName( derivedUniqueObject->applicationName.data() );
-		appInfo.setApplicationVersion( derivedUniqueObject->applicationVersion );
-		appInfo.setPEngineName( derivedUniqueObject->engineName.data() );
-		appInfo.setEngineVersion( derivedUniqueObject->engineVersion );
-		appInfo.setApiVersion( derivedUniqueObject->apiVersion );
+		appInfo.setPApplicationName( derivedUniqueObject->applicationName.data() )
+			.setApplicationVersion( derivedUniqueObject->applicationVersion )
+			.setPEngineName( derivedUniqueObject->engineName.data() )
+			.setEngineVersion( derivedUniqueObject->engineVersion )
+			.setApiVersion( derivedUniqueObject->apiVersion );
 
-		vk::InstanceCreateInfo ci;
-		ci.setPNext( derivedUniqueObject->extensionMap.get_chain() );
-		ci.setFlags( derivedUniqueObject->flags );
-		ci.setPApplicationInfo( &appInfo );
-		ci.setEnabledLayerCount( layerNames.size() );
-		ci.setPEnabledLayerNames( layerNames );
-		ci.setEnabledExtensionCount( extensionNames.size() );
-		ci.setPEnabledExtensionNames( extensionNames );
+			auto ci = init_create_info<vk::InstanceCreateInfo>()
+			.setPApplicationInfo( &appInfo )
+			.setEnabledLayerCount( layerNames.size() )
+			.setPEnabledLayerNames( layerNames )
+			.setEnabledExtensionCount( extensionNames.size() )
+			.setPEnabledExtensionNames( extensionNames );
+
 		derivedUniqueObject->uniqueObject = vk::createInstanceUnique( ci );
 
 		return std::move( *derivedUniqueObject );

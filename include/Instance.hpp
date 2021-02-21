@@ -1,5 +1,7 @@
 #pragma once
+
 #include "UniqueObject.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace stellar {
 	using UOInstance = UniqueObject<vk::UniqueInstance, vk::Instance, vk::InstanceCreateFlags>;

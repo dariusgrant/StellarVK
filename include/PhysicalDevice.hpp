@@ -1,5 +1,5 @@
 #pragma once
-#include <vulkan/vulkan.hpp>
+
 #include "Instance.hpp"
 
 namespace stellar {
